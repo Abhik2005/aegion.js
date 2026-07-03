@@ -1,0 +1,32 @@
+{
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:security/recommended-legacy"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2024,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "security"
+  ],
+  "rules": {
+    "security/detect-object-injection": "off",
+    "security/detect-non-literal-fs-filename": "off",
+    "security/detect-non-literal-require": "warn",
+    "security/detect-unsafe-regex": "error",
+    "security/detect-eval-with-expression": "error",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-unsafe-function-type": "off",
+    "no-control-regex": "off",
+    "no-useless-escape": "off"
+  }
+}

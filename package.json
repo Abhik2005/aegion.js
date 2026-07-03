@@ -1,0 +1,55 @@
+{
+  "name": "aegion.js",
+  "version": "1.0.0",
+  "description": "Secure, enterprise-level Node.js server library with Functional Composition routing.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Abhik Mondal",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/aegion.git"
+  },
+  "keywords": [
+    "server",
+    "framework",
+    "composition",
+    "security",
+    "hash"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx --test tests/*.test.ts",
+    "coverage": "c8 npm run test",
+    "lint:security": "eslint src/ --ext .ts",
+    "audit:ci": "npm audit --audit-level=high",
+    "benchmark": "tsx tests/benchmark.ts"
+  },
+  "dependencies": {
+    "@fastify/busboy": "^3.0.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
+    "autocannon": "^8.0.0",
+    "c8": "^11.0.0",
+    "ejs": "^6.0.1",
+    "eslint": "^8.57.1",
+    "eslint-plugin-security": "^4.0.1",
+    "mongoose": "^9.7.3",
+    "tsx": "^4.22.4",
+    "typescript": "^5.5.0"
+  }
+}
