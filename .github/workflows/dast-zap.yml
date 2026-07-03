@@ -44,3 +44,4 @@ jobs:
           target: 'http://localhost:3000'
           fail_action: false
           cmd_options: '-a'
+          artifact_name: 'zap-report'
