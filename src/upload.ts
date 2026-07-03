@@ -16,6 +16,10 @@ export interface UploadOptions {
     limits?: {
         fileSize?: number;
         files?: number;
+        fields?: number;
+        fieldNameSize?: number;
+        fieldSize?: number;
+        parts?: number;
     }
 }
 
