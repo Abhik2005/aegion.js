@@ -10,6 +10,9 @@ jobs:
   zap_scan:
     runs-on: ubuntu-latest
     name: Scan the application
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
