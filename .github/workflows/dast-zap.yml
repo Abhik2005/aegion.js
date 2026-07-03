@@ -39,7 +39,7 @@ jobs:
         run: chmod -R 777 .
 
       - name: ZAP Scan
-        uses: zaproxy/action-baseline@v0.12.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: 'http://localhost:3000'
           fail_action: false
