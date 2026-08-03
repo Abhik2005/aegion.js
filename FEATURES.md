@@ -82,8 +82,11 @@ const app = new Server({
 });
 
 get("/secure", async (ctx) => {
-    // Encrypts cookie data completely
-    await ctx.cookie.setEncrypted("auth", { user: "admin" });
+    // AES-256-GCM encrypted cookie — tamper-proof, server-side secret required
+    ctx.cookie.setEncrypted("auth", { user: "admin" });
+    
+    // Read and decrypt (returns null if tampered or missing)
+    const auth = ctx.cookie.getEncrypted("auth");
     
     // Read validated, frozen environment variable
     const db = app.env.DATABASE_URL;
@@ -183,11 +186,20 @@ const v1 = group("/api/v1",
 ### S
 - **Security Headers (Helmet):** Automatically injects `X-Content-Type-Options: nosniff`, `Strict-Transport-Security` (HSTS), and `X-Frame-Options: DENY` on every request.
 - **Strict Return Serialization:** If a handler returns a plain object, the pipeline automatically detects it, serializes it to JSON, and ends the response cleanly.
+- **Stateless JWT (standalone):** `jwt.sign()` and `jwt.verify()` are exported for Bearer-token authentication patterns (e.g., API tokens in `Authorization` headers).
 ```typescript
-get("/auto-json", (ctx) => {
-    // You don't even need to call ctx.json()
-    // The framework detects the object and serializes it securely!
-    return { magic: true };
+import { jwt, JWTError } from "aegion";
+
+get("/protected", (ctx) => {
+    const authHeader = ctx.req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+    try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET!);
+        return { userId: payload.sub };
+    } catch (err) {
+        if (err instanceof JWTError) return ctx.status(401).json({ error: err.message });
+        throw err;
+    }
 })
 ```
 

@@ -19,12 +19,15 @@ export class Context {
     public session: SessionManager;
     public query: Record<string, string> = {};
     /**
+     * Route parameters extracted from dynamic URL segments (e.g. :id).
+     * Populated by the router before the pipeline executes.
+     */
+    public params: Record<string, string> = {};
+    /**
      * Store data strictly tied to the current request lifecycle.
+     * Use this instead of adding custom properties directly to ctx.
      */
     public locals: Record<string, any> & { nonce?: string } = {};
-    
-    // Dynamic user data space
-    [key: string]: any; 
     
     private _statusCode: number = 200;
     private _isFinished: boolean = false;

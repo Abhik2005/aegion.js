@@ -25,6 +25,8 @@ export { csrf } from './security/csrf.js';
 export { bruteForce } from './security/brute-force.js';
 export { Hash } from './security/hash.js';
 export type { ScryptOptions } from './security/hash.js';
+export { jwt, JWTError } from './security/jwt.js';
+export type { JwtPayload } from './security/jwt.js';
 export { serveStatic } from './static.js';
 export type { StaticOptions } from './static.js';
 

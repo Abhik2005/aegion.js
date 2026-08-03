@@ -36,7 +36,7 @@ export class EnvParser {
                 if (key) {
                     const value = rest.join('=').trim();
                     // Remove surrounding quotes if any
-                    const unquoted = value.replace(/^(['"])(.*)\\1$/, '$2');
+                    const unquoted = value.replace(/^(['"])(.*)\1$/, '$2');
                     rawEnv[key.trim()] = unquoted;
                 }
             }
