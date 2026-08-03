@@ -3,7 +3,7 @@ import { Middleware, Handler, ErrorHandler } from './composition.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 // AsyncLocalStorage to catch swallowed errors in the pipeline
-export const executionContext = new AsyncLocalStorage<Context>();
+const executionContext = new AsyncLocalStorage<Context>();
 
 export class Pipeline {
     static async execute(

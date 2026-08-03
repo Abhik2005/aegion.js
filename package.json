@@ -1,6 +1,6 @@
 {
   "name": "aegion.js",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Secure, enterprise-level Node.js server library with Functional Composition routing.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -34,10 +34,12 @@
   "scripts": {
     "build": "tsc",
     "test": "tsx --test tests/*.test.ts",
+    "test:autoload": "tsx --test tests/autoload.test.ts",
+    "test:manual": "tsx pkg_test/run_manual_test.ts",
     "coverage": "c8 npm run test",
     "lint:security": "eslint src/ --ext .ts",
     "audit:ci": "npm audit --audit-level=high",
-    "benchmark": "tsx tests/benchmark.ts"
+    "benchmark": "tsx benchmarks/run.ts"
   },
   "dependencies": {
     "@fastify/busboy": "^3.0.0",
