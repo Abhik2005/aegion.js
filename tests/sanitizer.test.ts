@@ -7,6 +7,9 @@ import { Server } from '../src/server.js';
 import { Context } from '../src/context.js';
 
 describe('NoSQL Sanitization Pipeline', () => {
+    // ────────────────────────────────────────────────────────────
+    // $ prefix operator tests (existing)
+    // ────────────────────────────────────────────────────────────
     test('should allow perfectly valid JSON without throwing', () => {
         const payload = {
             username: 'admin',
@@ -23,7 +26,7 @@ describe('NoSQL Sanitization Pipeline', () => {
             username: { $gt: '' },
             password: 'password'
         };
-        assert.throws(() => Sanitizer.sanitizeNoSQL(payload), SanitizerError, /NoSQL Injection Detected/);
+        assert.throws(() => Sanitizer.sanitizeNoSQL(payload), { name: 'SanitizerError', message: /NoSQL Injection Detected/ });
     });
 
     test('should throw on deeply nested malicious operators in objects', () => {
@@ -46,6 +49,70 @@ describe('NoSQL Sanitization Pipeline', () => {
         };
         assert.throws(() => Sanitizer.sanitizeNoSQL(payload), SanitizerError);
     });
+
+    // ────────────────────────────────────────────────────────────
+    // Dot-notation field-path traversal tests (new vector)
+    // ────────────────────────────────────────────────────────────
+
+    test('should throw on top-level dot-notation key (field path traversal)', () => {
+        // Attack: db.users.updateOne(filter, { $set: body })
+        // body = { "user.isAdmin": true } → sets nested field user.isAdmin = true
+        const payload = { 'user.isAdmin': true };
+        assert.throws(
+            () => Sanitizer.sanitizeNoSQL(payload),
+            { name: 'SanitizerError', message: /Dot-notation key/ }
+        );
+    });
+
+    test('should throw on dot-notation key in a deeply nested object', () => {
+        const payload = {
+            profile: {
+                settings: {
+                    'role.name': 'admin'  // buried dot-notation key
+                }
+            }
+        };
+        assert.throws(() => Sanitizer.sanitizeNoSQL(payload), SanitizerError);
+    });
+
+    test('should throw on dot-notation key inside an array of objects', () => {
+        const payload = {
+            updates: [
+                { field: 'username', value: 'alice' },
+                { 'user.role': 'superadmin' }  // dot key in array item
+            ]
+        };
+        assert.throws(() => Sanitizer.sanitizeNoSQL(payload), SanitizerError);
+    });
+
+    test('should throw on mixed attack: object containing both $ and dot keys', () => {
+        const payload = {
+            'role.name': 'admin',
+            $gt: ''
+        };
+        assert.throws(() => Sanitizer.sanitizeNoSQL(payload), SanitizerError);
+    });
+
+    test('should allow dot characters in VALUES (not keys)', () => {
+        // Dot in a value is fine — only dot in a KEY is dangerous
+        const payload = {
+            email: 'user@example.com',       // dot in value — safe
+            domain: 'api.example.com',       // dot in value — safe
+            version: '1.2.3',               // dot in value — safe
+        };
+        assert.doesNotThrow(() => Sanitizer.sanitizeNoSQL(payload));
+    });
+
+    test('should allow a key that only contains a dot-free identifier even if value is complex', () => {
+        const payload = {
+            config: { host: 'db.internal', port: 5432 }  // dot is in a value, not a key
+        };
+        assert.doesNotThrow(() => Sanitizer.sanitizeNoSQL(payload));
+    });
+
+    // ────────────────────────────────────────────────────────────
+    // Primitive and null safety tests
+    // ────────────────────────────────────────────────────────────
 
     test('should handle null and undefined safely', () => {
         assert.strictEqual(Sanitizer.sanitizeNoSQL(null), null);

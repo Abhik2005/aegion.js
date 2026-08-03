@@ -44,20 +44,20 @@ describe('Stateless JWT Engine & Session Manager', () => {
             parts[1] = Buffer.from(JSON.stringify({ userId: 999 })).toString('base64url');
             const tamperedToken = parts.join('.');
 
-            assert.throws(() => jwt.verify(tamperedToken, secret), JWTError, /Signature verification failed/);
+            assert.throws(() => jwt.verify(tamperedToken, secret), {name: 'JWTError', message: /Signature verification failed/ });
         });
 
         test('should throw error on expired token', async () => {
             const payload = { userId: 123 };
             const token = jwt.sign(payload, secret, -1); // Expired 1 second ago
 
-            assert.throws(() => jwt.verify(token, secret), JWTError, /Token expired/);
+            assert.throws(() => jwt.verify(token, secret), { name: 'JWTError', message: /Token expired/ });
         });
         
         test('should throw error on malformed format', () => {
-            assert.throws(() => jwt.verify('not.a.token', secret), JWTError, /Failed to parse JWT payload/); // 3 parts, but not valid json/base64
-            assert.throws(() => jwt.verify('only.two', secret), JWTError, /Malformed JWT/); // Less than 3 parts
-            assert.throws(() => jwt.verify('', secret), JWTError, /Invalid token format/);
+            assert.throws(() => jwt.verify('not.a.token', secret), { name: 'JWTError', message: /Signature verification failed/ }); // 3 parts, but signature is wrong
+            assert.throws(() => jwt.verify('only.two', secret), { name: 'JWTError', message: /Malformed JWT/ }); // Less than 3 parts
+            assert.throws(() => jwt.verify('', secret), { name: 'JWTError', message: /Invalid token format/ });
             
             // Invalid JSON payload
             const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
@@ -66,7 +66,7 @@ describe('Stateless JWT Engine & Session Manager', () => {
             const sig = crypto.createHmac('sha256', secret).update(dataToSign).digest();
             const validSig = Buffer.from(sig).toString('base64url');
             
-            assert.throws(() => jwt.verify(`${dataToSign}.${validSig}`, secret), JWTError, /Failed to parse JWT payload/);
+            assert.throws(() => jwt.verify(`${dataToSign}.${validSig}`, secret), { name: 'JWTError', message: /Failed to parse JWT payload/ });
         });
     });
 
@@ -109,30 +109,27 @@ describe('Stateless JWT Engine & Session Manager', () => {
         });
 
         test('should automatically rotate if access token is expired but refresh is valid', () => {
-            // First, create a SessionManager with a 0 second access token to force expiration
-            const req1 = new http.IncomingMessage(new Socket());
-            const res1 = new http.ServerResponse(req1);
-            const cookieMgr = new CookieManager(req1, res1);
+            // Build a genuinely expired access token by using a negative expiresIn.
+            // jwt.sign() computes exp = floor(Date.now()/1000) + expiresIn, so -10
+            // produces a token whose exp was 10 seconds ago — expired on creation.
+            // The refresh token is valid (7 days), so SessionManager.get() should
+            // fall through to the rotation branch and issue a fresh pair of cookies.
             const secret = 'super-secret-key-that-is-at-least-32-chars-long!';
-            const mgr = new SessionManager(cookieMgr, secret, { accessExpiresIn: -1 }); // Instantly expires
-            
-            mgr.create({ id: 42 });
-            const cookies = res1.getHeader('Set-Cookie') as string[];
-            const cookieStr = cookies.map(c => c.split(';')[0]).join('; ');
 
-            // Simulate next request
+            const expiredAccess = jwt.sign({ id: 42 }, secret, -10); // exp = now - 10s
+            const validRefresh  = jwt.sign({ _rotate: true, payload: { id: 42 } }, secret, 604800);
+
             const req2 = new http.IncomingMessage(new Socket());
-            req2.headers = { cookie: cookieStr };
+            req2.headers = { cookie: `aegion_access=${expiredAccess}; aegion_refresh=${validRefresh}` };
             const res2 = new http.ServerResponse(req2);
             const cookieMgr2 = new CookieManager(req2, res2);
-            // Normal manager for second request
-            const mgr2 = new SessionManager(cookieMgr2, secret); 
-            
+            const mgr2 = new SessionManager(cookieMgr2, secret);
+
             const session = mgr2.get<{ id: number }>();
             assert.ok(session);
             assert.strictEqual(session.id, 42);
-            
-            // Since rotation occurred, a NEW set of cookies should have been issued
+
+            // Rotation occurred — a new pair of cookies must have been issued
             const newCookies = res2.getHeader('Set-Cookie') as string[];
             assert.ok(newCookies);
             assert.strictEqual(newCookies.length, 2);
@@ -156,28 +153,23 @@ describe('Stateless JWT Engine & Session Manager', () => {
         });
 
         test('should destroy session and return null if access token is expired AND refresh token is tampered', () => {
-            const req1 = new http.IncomingMessage(new Socket());
-            const res1 = new http.ServerResponse(req1);
-            const cookieMgr = new CookieManager(req1, res1);
             const secret = 'super-secret-key-that-is-at-least-32-chars-long!';
-            const mgr = new SessionManager(cookieMgr, secret, { accessExpiresIn: -1 }); // Instantly expires
-            
-            mgr.create({ id: 42 });
-            const cookies = res1.getHeader('Set-Cookie') as string[];
-            // Break the refresh token by appending 'tamper'
-            const cookieStr = cookies.map(c => c.split(';')[0]).join('; ') + 'tamper';
+
+            // Expired access token (exp = now - 10s) + tampered refresh token
+            const expiredAccess   = jwt.sign({ id: 42 }, secret, -10);
+            const tamperedRefresh = jwt.sign({ _rotate: true, payload: { id: 42 } }, secret, 604800) + 'tamper';
 
             const req2 = new http.IncomingMessage(new Socket());
-            req2.headers = { cookie: cookieStr };
+            req2.headers = { cookie: `aegion_access=${expiredAccess}; aegion_refresh=${tamperedRefresh}` };
             const res2 = new http.ServerResponse(req2);
             const cookieMgr2 = new CookieManager(req2, res2);
-            const mgr2 = new SessionManager(cookieMgr2, secret); 
-            
+            const mgr2 = new SessionManager(cookieMgr2, secret);
+
             const session = mgr2.get();
             assert.strictEqual(session, null);
-            
+
             const newCookies = res2.getHeader('Set-Cookie') as string[];
-            assert.ok(newCookies[0].includes('Max-Age=0')); // Destroy called during rotation catch block
+            assert.ok(newCookies[0].includes('Max-Age=0')); // destroy() called in rotation catch block
         });
         
         test('should allow developer override on cookie configs', () => {

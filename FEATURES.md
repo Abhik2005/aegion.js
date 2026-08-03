@@ -132,6 +132,11 @@ const app = new Server({
 
 ---
 
+### H
+- **HTTPS & HTTP/2 (Native):** Automatically spins up secure TLS servers or HTTP/2 multiplexing natively by just passing certificates to the `Server` options.
+
+---
+
 ### I
 - **Idiot-Proof Circular Protection:** Prevents server crashes if a developer accidentally attempts to `JSON.stringify()` circular Node.js stream objects via `ctx.json(ctx)`.
 
@@ -150,8 +155,8 @@ const app = new Server({
 - **Prototype Poisoning Defense:** Custom JSON Reviver implemented to destroy `__proto__`.
 ```typescript
 get("/users/:id", async (ctx) => {
-    // Parameter extraction natively supported
-    const userId = ctx.req.params.id;
+    // Parameter extraction natively supported on the Context object
+    const userId = ctx.params.id;
     return { id: userId };
 })
 ```

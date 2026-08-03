@@ -36,11 +36,18 @@ import { Server } from 'aegion';
 const app = new Server({
     port: 3000,
     cookieSecret: 'super-secret-32-byte-encryption-key!', // Required for signed cookies and sessions
-    nosqlSanitizer: true, // Automatically strips $ operators from JSON to prevent NoSQL injection
+    nosqlSanitizer: true, // Automatically strips $ operators and dot-notation from JSON to prevent NoSQL injection
+    
+    // Optional: Aegion automatically spins up an HTTPS or HTTP/2 server if TLS is provided
+    // tls: {
+    //     key: './certs/private-key.pem',
+    //     cert: './certs/certificate.pem'
+    // },
+    // http2: true
 });
 
 app.start(() => {
-    console.log('Server is live on http://localhost:3000');
+    console.log('Server is live!');
 });
 ```
 
@@ -140,7 +147,7 @@ app.register([
 ## 4. The Pipeline & Middlewares
 
 Middlewares are just functions that receive `ctx`. 
-**Crucial Detail:** Middlewares must return `ctx.next()` (or `CONTINUE_PIPELINE`) to yield control. If they don't return it, Aegion halts the pipeline immediately to prevent accidental data leakage.
+**Crucial Detail:** Middlewares must return `ctx.next()` to yield control. If they don't return it, Aegion halts the pipeline immediately to prevent accidental data leakage (Fail-Closed security).
 
 ### Creating an Authentication Middleware
 ```typescript
@@ -329,7 +336,7 @@ const app = new Server({
     port: 3000,
     rateLimit: {
         windowMs: 15 * 60 * 1000, // 15-minute window
-        max: 500, // Max 500 requests per IP
+        maxRequests: 500, // Max 500 requests per IP
         message: 'Rate limit exceeded. Too much traffic.'
     }
 });

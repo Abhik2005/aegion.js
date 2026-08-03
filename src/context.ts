@@ -12,6 +12,22 @@ import { Sanitizer, SanitizerError } from './security/sanitizer.js';
 
 export const CONTINUE_PIPELINE = Symbol('CONTINUE_PIPELINE');
 
+/**
+ * Options bag for the Context constructor.
+ * Prefer this over the legacy 6-positional-argument form when constructing
+ * a Context manually (e.g. in tests or custom middleware factories).
+ */
+export interface ContextOptions {
+    /** The HMAC secret used to sign cookies and session tokens. */
+    secretKey?: string;
+    /** View-engine configuration for ctx.render(). */
+    views?: ViewOptions;
+    /** Session configuration overrides (TTLs, cookie flags). */
+    session?: SessionConfig;
+    /** Enable NoSQL injection sanitization on query params, route params, and body. */
+    nosqlSanitizer?: boolean;
+}
+
 export class Context {
     public req: http.IncomingMessage;
     public res: http.ServerResponse;
@@ -35,13 +51,46 @@ export class Context {
     private viewsConfig?: ViewOptions;
     private nosqlSanitizer: boolean;
 
-    constructor(req: http.IncomingMessage, res: http.ServerResponse, secretKey?: string, viewsConfig?: ViewOptions, sessionConfig?: SessionConfig, nosqlSanitizer: boolean = false) {
+    // Overload 1 — New clean options-bag API (preferred)
+    constructor(req: http.IncomingMessage, res: http.ServerResponse, options?: ContextOptions);
+    // Overload 2 — Legacy positional API (backward-compatible, existing callsites unaffected)
+    constructor(req: http.IncomingMessage, res: http.ServerResponse, secretKey?: string, viewsConfig?: ViewOptions, sessionConfig?: SessionConfig, nosqlSanitizer?: boolean);
+    // Implementation
+    constructor(
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        secretKeyOrOptions?: string | ContextOptions,
+        viewsConfig?: ViewOptions,
+        sessionConfig?: SessionConfig,
+        nosqlSanitizer?: boolean
+    ) {
         this.req = req;
         this.res = res;
-        this._secretKey = secretKey;
-        this.viewsConfig = viewsConfig;
-        this.nosqlSanitizer = nosqlSanitizer;
-        this.cookie = new CookieManager(req, res, secretKey);
+
+        // Resolve the two calling conventions into a single set of values
+        let secretKey: string | undefined;
+        let resolvedViews: ViewOptions | undefined;
+        let resolvedSession: SessionConfig | undefined;
+        let resolvedSanitizer: boolean;
+
+        if (secretKeyOrOptions !== null && typeof secretKeyOrOptions === 'object') {
+            // New options-bag form: new Context(req, res, { secretKey, views, session, nosqlSanitizer })
+            secretKey         = secretKeyOrOptions.secretKey;
+            resolvedViews     = secretKeyOrOptions.views;
+            resolvedSession   = secretKeyOrOptions.session;
+            resolvedSanitizer = secretKeyOrOptions.nosqlSanitizer ?? false;
+        } else {
+            // Legacy positional form: new Context(req, res, secretKey?, viewsConfig?, sessionConfig?, nosqlSanitizer?)
+            secretKey         = secretKeyOrOptions as string | undefined;
+            resolvedViews     = viewsConfig;
+            resolvedSession   = sessionConfig;
+            resolvedSanitizer = nosqlSanitizer ?? false;
+        }
+
+        this._secretKey       = secretKey;
+        this.viewsConfig      = resolvedViews;
+        this.nosqlSanitizer   = resolvedSanitizer;
+        this.cookie           = new CookieManager(req, res, secretKey);
 
         // BUG-21 FIX: Replace the hardcoded fallback secret with a per-process
         // random key. The old fallback ('fallback-secret-key-that-is-at-least-32-chars-long')
@@ -51,7 +100,7 @@ export class Context {
         // cannot be forged by an external attacker. SessionManager will still throw a clear
         // error if a developer actively tries to use sessions without a proper secret.
         const sessionSecret = secretKey || crypto.randomBytes(32).toString('hex');
-        this.session = new SessionManager(this.cookie, sessionSecret, sessionConfig);
+        this.session = new SessionManager(this.cookie, sessionSecret, resolvedSession);
 
         // BUG-51 FIX: Parse query string ONCE here in the constructor.
         // server.ts previously parsed it a second time and overwrote ctx.query — redundant work.
