@@ -17,7 +17,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Abhik2005/aegion.js.git"
+    "url": "git+https://github.com/Abhik2005/aegion.js.git"
   },
   "keywords": [
     "server",
