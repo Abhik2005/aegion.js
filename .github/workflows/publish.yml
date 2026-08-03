@@ -19,8 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
-          # Note: We deliberately do not specify registry-url here so OIDC is not blocked by legacy auth token checks!
+          node-version: '24.x'
 
       - name: Update npm to latest
         run: npm install -g npm@latest
@@ -32,4 +31,7 @@ jobs:
         run: npm run build
 
       - name: Publish to npm via OIDC Trusted Publishing
-        run: npm publish --provenance --access public
+        run: |
+          unset NODE_AUTH_TOKEN || true
+          unset NPM_TOKEN || true
+          npm publish --provenance --access public
