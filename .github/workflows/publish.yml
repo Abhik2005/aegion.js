@@ -36,3 +36,5 @@ jobs:
           unset NODE_AUTH_TOKEN || true
           unset NPM_TOKEN || true
           npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
