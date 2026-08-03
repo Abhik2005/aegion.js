@@ -11,7 +11,8 @@ build/
 coverage/
 .nyc_output/
 
-# Environment variables
+# Environment variables and auth configs
+.npmrc
 .env
 .env.local
 .env.development.local
