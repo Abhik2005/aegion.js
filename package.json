@@ -1,6 +1,6 @@
 {
   "name": "aegion.js",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Secure, enterprise-level Node.js server library with Functional Composition routing.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,7 +17,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/aegion.git"
+    "url": "https://github.com/Abhik2005/aegion.js.git"
   },
   "keywords": [
     "server",
