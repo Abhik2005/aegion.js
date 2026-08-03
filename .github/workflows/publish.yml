@@ -1,0 +1,34 @@
+name: Publish to npm
+
+on:
+  workflow_dispatch: # Allows you to manually trigger publishing from GitHub Actions UI
+  release:
+    types: [published] # Automatically publishes whenever you create a GitHub Release
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # CRITICAL: This grants OIDC permission so npm trusts GitHub Actions without needing tokens/passwords!
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build TypeScript to dist/
+        run: npm run build
+
+      - name: Publish to npm with Provenance
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Automatically handled by OIDC or uses fallback secret
