@@ -1,5 +1,5 @@
 {
-  "name": "aegion.js",
+  "name": "@aegion/aegion.js",
   "version": "2.0.0",
   "description": "Secure, enterprise-level Node.js server library with Functional Composition routing.",
   "main": "./dist/index.js",

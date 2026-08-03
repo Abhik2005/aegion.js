@@ -10,6 +10,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 ## [2.0.0] — 2026-08-03
 
 > **This is a major release.** Breaking changes are listed at the top.
+> **Note:** Due to an npm registry issue, the package name has officially changed from `aegion.js` to `@aegion/aegion.js`. Please update your `package.json` dependencies accordingly!
 
 ### Added
 
