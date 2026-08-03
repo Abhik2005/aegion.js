@@ -11,7 +11,7 @@ const CONNECTIONS = 100;
 
 // Setup Server
 const server = new Server();
-server.router.register([{
+server.register([{
     method: 'GET',
     path: '/',
     handler: async (ctx: Context) => { ctx.res.end('Hello Benchmark!'); },
@@ -26,7 +26,7 @@ server.start(async () => {
         url: URL,
         connections: CONNECTIONS,
         duration: DURATION
-    });
+    }, () => {});
 
     autocannon.track(instance);
 
