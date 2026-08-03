@@ -30,6 +30,8 @@ jobs:
 
       - name: Publish to npm
         run: |
+          echo "Token length: ${#NODE_AUTH_TOKEN}"
+          echo "Token prefix: ${NODE_AUTH_TOKEN:0:4}"
           npm config set //registry.npmjs.org/:_authToken "${NODE_AUTH_TOKEN}"
           npm publish --access public
         env:
